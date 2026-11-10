@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yalkut Yosef Halakha Bot</title>
+<style>
+  :root { --bg:#f7f5f0; --card:#fff; --ink:#1d2433; --muted:#6b7280; --accent:#2f5d9e; --line:#e5e1d8; --hl:#fdf3c4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14171d; --card:#1d222b; --ink:#e7e9ee; --muted:#9aa3b2; --accent:#7fa8e6; --line:#2c333f; --hl:#4a4214; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui, "Segoe UI", Arial, sans-serif; }
+  header { padding:20px 16px 8px; max-width:860px; margin:auto; }
+  h1 { margin:0; font-size:22px; } .sub { color:var(--muted); font-size:14px; }
+  main { max-width:860px; margin:auto; padding:8px 16px 40px; }
+  form { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+  input, select, button { font:inherit; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); }
+  input { flex:1 1 320px; } button { background:var(--accent); color:#fff; border:none; cursor:pointer; }
+  button.secondary { background:var(--card); color:var(--accent); border:1px solid var(--accent); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .notice { font-size:14px; color:var(--muted); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:10px 0; }
+  .ref { color:var(--accent); font-weight:600; font-size:14px; } .he { direction:rtl; text-align:right; font-family:"David","Frank Ruehl CLM","Times New Roman",serif; font-size:18px; }
+  .answer { white-space:pre-wrap; } .src { color:var(--muted); font-size:15px; } mark { background:var(--hl); color:inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Halakha according to Yalkut Yosef</h1>
+  <div class="sub">Kitzur Shulchan Aruch Yalkut Yosef, Rav Yitzhak Yosef, following the rulings of Hacham Ovadia Yosef zt"l</div>
+</header>
+<main>
+  <form id="f">
+    <input id="q" dir="auto" placeholder="חפש: חימום תבשיל בשבת   /   Ask: can I reheat soup on Shabbat?" autofocus>
+    <select id="sec"><option value="">All sections</option></select>
+    <button type="submit" id="searchBtn" class="secondary">Search the text</button>
+    <button type="button" id="askBtn" disabled>Ask</button>
+  </form>
+  <div id="status" class="notice">Loading…</div>
+  <div id="out"></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function highlight(text, q) {
+  let h = esc(text);
+  const words = q.split(/\s+/).filter(w => /[א-ת]{3,}/.test(w)).map(w => w.replace(/^[והבכלמש]{1,2}(?=[א-ת]{3})/, ''));
+  for (const w of words) h = h.split(w).join(`<mark>${w}</mark>`);
+  return h;
+}
+function card(p, q) {
+  return `<div class="card he"><div class="ref">${esc(p.section)} · ${esc(p.siman)} · סעיף ${esc(p.seif)}</div>
+          <div>${highlight(p.text, q || '')}</div></div>`;
+}
+fetch('/api/status').then(r => r.json()).then(s => {
+  for (const name of s.sections) $('#sec').insertAdjacentHTML('beforeend', `<option>${esc(name)}</option>`);
+  $('#askBtn').disabled = !s.claude;
+  $('#status').textContent = s.claude
+    ? `${s.count.toLocaleString()} se'ifim loaded. Ask a question in any language, or search the Hebrew text.`
+    : `${s.count.toLocaleString()} se'ifim loaded. Search mode only: type Hebrew words to search the text. Add an Anthropic API key to turn on "Ask".`;
+});
+$('#f').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('#q').value.trim(); if (!q) return;
+  const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&section=${encodeURIComponent($('#sec').value)}`).then(r => r.json());
+  $('#out').innerHTML = r.results.length ? r.results.map(p => card(p, q)).join('')
+    : `<div class="notice">No results. The text is in Hebrew, so search with Hebrew words (e.g. ברכה אחרונה).</div>`;
+};
+$('#askBtn').onclick = async () => {
+  const q = $('#q').value.trim(); if (!q) return;
+  $('#out').innerHTML = '<div class="notice">Looking it up…</div>';
+  const r = await fetch('/api/ask', {method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({question:q, section:$('#sec').value})}).then(r => r.json());
+  if (r.error) { $('#out').innerHTML = `<div class="notice">${esc(r.error)}</div>`; return; }
+  const cites = r.citations.map((c, i) => `<div class="src he">[${i+1}] <b>${esc(c.title)}</b>: ${esc(c.quote)}</div>`).join('');
+  $('#out').innerHTML = `<div class="card"><div class="answer" dir="auto">${esc(r.text)}</div>
+     <hr style="border:none;border-top:1px solid var(--line)">${cites}
+     <p class="src">This is a learning tool, not a psak. For your own case, ask a rav.</p></div>
+     <h3>Passages consulted</h3>` + r.passages.map(p => card(p, r.terms)).join('');
+};
+</script>
+</body>
+</html>
