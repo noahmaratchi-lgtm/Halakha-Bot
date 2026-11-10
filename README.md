@@ -5,6 +5,12 @@ Search and (with an Anthropic API key) ask questions about **Kitzur Shulchan Aru
 
 ## Run it
 
+**Windows (easiest):** on GitHub click **Code → Download ZIP**, unzip it, and double-click
+`start.bat`. It sets everything up and opens http://localhost:5000 in your browser.
+You need Python installed first (python.org/downloads, tick "Add python.exe to PATH").
+
+**Mac / Linux:**
+
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
