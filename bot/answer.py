@@ -1,15 +1,19 @@
 """Answer a question with Claude, using only se'ifim retrieved from the index.
 Needs ANTHROPIC_API_KEY in the environment."""
-import os, pathlib
+import os, pathlib, re
 import anthropic
 
 # Optional: put the key in a file called api_key.txt in the project folder
 # (handy when you can't set environment variables). Never commit that file.
-_KEY_FILE = pathlib.Path(__file__).resolve().parent.parent / "api_key.txt"
-if not os.environ.get("ANTHROPIC_API_KEY") and _KEY_FILE.exists():
-    _key = _KEY_FILE.read_text(encoding="utf-8-sig").strip()
-    if _key:
-        os.environ["ANTHROPIC_API_KEY"] = _key
+# Windows hides extensions, so also accept "api_key", "api_key.txt.txt", etc.
+_ROOT = pathlib.Path(__file__).resolve().parent.parent
+if not os.environ.get("ANTHROPIC_API_KEY"):
+    for _f in sorted(_ROOT.glob("api_key*")):
+        if _f.is_file():
+            _m = re.search(r"sk-ant-[A-Za-z0-9_\-]+", _f.read_text(encoding="utf-8-sig", errors="ignore"))
+            if _m:
+                os.environ["ANTHROPIC_API_KEY"] = _m.group(0)
+                break
 
 MODEL = "claude-opus-5-5"
 

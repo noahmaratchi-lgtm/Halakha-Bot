@@ -2,4 +2,4 @@
 __pycache__/
 data/
 *.log
-api_key.txt
+api_key*
