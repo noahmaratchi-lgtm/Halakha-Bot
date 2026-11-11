@@ -79,5 +79,22 @@ def ask():
         return jsonify(error=f"Something went wrong: {e}"), 500
     return jsonify(**result)
 
+def lan_address() -> str | None:
+    """This computer's address on the local Wi-Fi, for opening the bot from a phone."""
+    import socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sk:
+            sk.connect(("8.8.8.8", 80))   # no data is sent; this just picks the Wi-Fi interface
+            return sk.getsockname()[0]
+    except OSError:
+        return None
+
 if __name__ == "__main__":
+    ip = lan_address()
+    print("\n" + "=" * 60)
+    print("  On this computer:  http://localhost:5000")
+    if ip:
+        print(f"  On your phone:     http://{ip}:5000")
+        print("  (phone must be on the same Wi-Fi as this computer)")
+    print("=" * 60 + "\n", flush=True)
     app.run(host="0.0.0.0", port=5000)
