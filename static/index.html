@@ -69,7 +69,8 @@ $('#askBtn').onclick = async () => {
   const q = $('#q').value.trim(); if (!q) return;
   $('#out').innerHTML = '<div class="notice">Looking it up…</div>';
   const r = await fetch('/api/ask', {method:'POST', headers:{'Content-Type':'application/json'},
-                        body: JSON.stringify({question:q, section:$('#sec').value})}).then(r => r.json());
+                        body: JSON.stringify({question:q, section:$('#sec').value})}).then(r => r.json())
+                        .catch(() => ({error: 'Something went wrong. Look at the black window for the error message.'}));
   if (r.error) { $('#out').innerHTML = `<div class="notice">${esc(r.error)}</div>`; return; }
   const cites = r.citations.map((c, i) => `<div class="src he">[${i+1}] <b>${esc(c.title)}</b>: ${esc(c.quote)}</div>`).join('');
   $('#out').innerHTML = `<div class="card"><div class="answer" dir="auto">${esc(r.text)}</div>

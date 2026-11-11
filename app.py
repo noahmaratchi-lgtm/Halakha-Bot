@@ -31,9 +31,23 @@ def ask():
         return jsonify(error="No ANTHROPIC_API_KEY set - showing search results only."), 400
     body = request.get_json(force=True)
     q = body.get("question", "").strip()
-    terms = claude.search_terms(q)
-    passages = index.search(f"{q} {terms}", k=12, section=body.get("section") or None)
-    result = claude.answer(q, passages)
+    try:
+        terms = claude.search_terms(q)
+        passages = index.search(f"{q} {terms}", k=12, section=body.get("section") or None)
+        result = claude.answer(q, passages)
+    except claude.anthropic.AuthenticationError:
+        return jsonify(error="The API key was rejected. Check that you copied the whole key (it starts with sk-ant-)."), 400
+    except claude.anthropic.PermissionDeniedError as e:
+        return jsonify(error=f"The key is not allowed to do this: {e.message}"), 400
+    except claude.anthropic.RateLimitError:
+        return jsonify(error="Too many requests right now. Wait a minute and try again."), 429
+    except claude.anthropic.APIStatusError as e:
+        msg = e.message
+        if "credit" in msg.lower() or "billing" in msg.lower():
+            msg = "Your Anthropic account has no credits. Add credits under Billing at platform.claude.com. (" + msg + ")"
+        return jsonify(error=msg), 400
+    except claude.anthropic.APIConnectionError:
+        return jsonify(error="Could not reach Anthropic. Check your internet connection (a school/work network may block it)."), 502
     return jsonify(**result, terms=terms, passages=passages)
 
 if __name__ == "__main__":
