@@ -24,6 +24,9 @@ Without a key: Hebrew keyword search over all 11,726 se'ifim.
 With a key: questions in any language get an answer from Claude, built only from the
 se'ifim the search found, with numbered citations.
 
+Or, with no terminal: create a file named `api_key.txt` in the project folder containing
+only your key. (It's in .gitignore - never share or commit it.)
+
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 .venv/bin/python app.py
