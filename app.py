@@ -12,6 +12,12 @@ if not DATA.exists():   # first run: download and parse the book
 app = Flask(__name__, static_folder="static")
 index = Index()
 
+@app.after_request
+def no_cache(resp):
+    # always load the newest page after an update
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
 @app.get("/")
 def home():
     return send_from_directory("static", "index.html")
