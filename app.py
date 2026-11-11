@@ -17,7 +17,7 @@ def home():
 
 @app.get("/api/status")
 def status():
-    return jsonify(claude=claude.available(), sections=index.sections(), count=len(index.docs))
+    return jsonify(claude=claude.available(), key_problem=claude.KEY_PROBLEM, sections=index.sections(), count=len(index.docs))
 
 @app.get("/api/search")
 def search():

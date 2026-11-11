@@ -56,7 +56,8 @@ fetch('/api/status').then(r => r.json()).then(s => {
   $('#askBtn').disabled = !s.claude;
   $('#status').textContent = s.claude
     ? `${s.count.toLocaleString()} se'ifim loaded. Ask a question in any language, or search the Hebrew text.`
-    : `${s.count.toLocaleString()} se'ifim loaded. Search mode only: type Hebrew words to search the text. Add an Anthropic API key to turn on "Ask".`;
+    : `${s.count.toLocaleString()} se'ifim loaded. Search mode only: type Hebrew words to search the text. Add an Anthropic API key to turn on "Ask".` + (s.key_problem ? `\n\nWhy Ask is off: ${s.key_problem}` : '');
+  $('#status').style.whiteSpace = 'pre-wrap';
 });
 $('#f').onsubmit = async e => {
   e.preventDefault();

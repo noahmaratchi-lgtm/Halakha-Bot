@@ -7,38 +7,31 @@ import anthropic
 # (handy when you can't set environment variables). Never commit that file.
 # Windows hides extensions, so also accept "api_key", "api_key.txt.txt", etc.
 _ROOT = pathlib.Path(__file__).resolve().parent.parent
-if not os.environ.get("ANTHROPIC_API_KEY"):
-    for _f in sorted(_ROOT.glob("api_key*")):
-        if _f.is_file():
-            _m = re.search(r"sk-ant-[A-Za-z0-9_\-]+", _f.read_text(encoding="utf-8-sig", errors="ignore"))
-            if _m:
-                os.environ["ANTHROPIC_API_KEY"] = _m.group(0)
-                break
-
-MODEL = "claude-opus-5-5"
-
-SYSTEM = """You answer halakha questions strictly according to Kitzur Shulchan Aruch Yalkut Yosef \
-(Rav Yitzhak Yosef, based on the rulings of Hacham Ovadia Yosef zt"l).
-
-Rules:
-- Use ONLY the provided se'ifim. Never add rulings from memory or from other poskim.
-- If the passages do not answer the question, say so plainly and suggest asking a rav.
-- Cite the siman and se'if for every ruling. Mention the source in brackets at the end \
-of the se'if (e.g. Yabia Omer, Chazon Ovadia) when it is relevant.
-- Keep the distinctions the text makes: lechatchila vs. bedi'eved, sha'at hadechak, \
-Sephardim vs. Ashkenazim, and conditions like "ויש להחמיר".
-- For case-specific or weighty questions (niddah, kashrut of a specific item, aguna, \
-mamzerut, medical questions on Shabbat, monetary disputes), give the general rule and \
-tell the user to ask a rav about their own case. If there is danger to life, tell them \
-to act to save life immediately.
-- Answer in the language the user wrote in. Keep Hebrew halakhic terms, with a short \
-translation the first time when answering in English."""
-
-QUERY_PROMPT = """Rewrite this halakha question as Hebrew search keywords that would appear \
-in the text of Kitzur Shulchan Aruch Yalkut Yosef (rabbinic Hebrew, e.g. בישול אחר בישול, \
-ברכה אחרונה, מוקצה). Give 4-12 words, space-separated, nothing else.
-
-Question: {q}"""
+KEY_PROBLEM = ""          # explains to the user why no key was found
+def _read(f: pathlib.Path) -> str:
+    raw = f.read_bytes()
+    for enc in ("utf-8-sig", "utf-16"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            pass
+    return raw.decode("latin-1")
+if os.environ.get("ANTHROPIC_API_KEY"):
+    pass
+else:
+    files = [f for f in sorted(_ROOT.glob("api_key*")) if f.is_file()]
+    for _f in files:
+        _m = re.search(r"sk-ant-[A-Za-z0-9_\-]+", _read(_f))
+        if _m:
+            os.environ["ANTHROPIC_API_KEY"] = _m.group(0)
+            break
+    else:
+        if not files:
+            KEY_PROBLEM = (f"No file named api_key found in {_ROOT}. Other files there: "
+                           + ", ".join(p.name for p in sorted(_ROOT.iterdir()) if p.is_file()))
+        else:
+            KEY_PROBLEM = (f"Found {', '.join(f.name for f in files)} but it has no key in it "
+                           "(a key starts with sk-ant-). Paste the key, save with Ctrl+S, and restart.")
 
 def available() -> bool:
     return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
