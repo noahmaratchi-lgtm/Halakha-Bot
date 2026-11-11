@@ -20,7 +20,8 @@ def _read(f: pathlib.Path) -> str:
 if os.environ.get("ANTHROPIC_API_KEY"):
     pass
 else:
-    files = [f for f in sorted(_ROOT.glob("api_key*")) if f.is_file()]
+    files = [f for f in sorted(_ROOT.iterdir())
+             if f.is_file() and re.match(r"api[ _-]?key", f.name, re.I)]
     for _f in files:
         _m = re.search(r"sk-ant-[A-Za-z0-9_\-]+", _read(_f))
         if _m:
@@ -28,7 +29,7 @@ else:
             break
     else:
         if not files:
-            KEY_PROBLEM = (f"No file named api_key found in {_ROOT}. Other files there: "
+            KEY_PROBLEM = (f"No file named api_key (or api-key) found in {_ROOT}. Other files there: "
                            + ", ".join(p.name for p in sorted(_ROOT.iterdir()) if p.is_file()))
         else:
             KEY_PROBLEM = (f"Found {', '.join(f.name for f in files)} but it has no key in it "

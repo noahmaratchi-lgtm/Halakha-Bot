@@ -3,3 +3,7 @@ __pycache__/
 data/
 *.log
 api_key*
+api-key*
+api key*
+apikey*
+start.new
