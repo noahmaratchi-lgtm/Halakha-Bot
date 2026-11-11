@@ -3,6 +3,7 @@ Run:  .venv/bin/python app.py   then open http://localhost:5000"""
 from flask import Flask, jsonify, request, send_from_directory
 from bot.search import Index, DATA
 from bot import answer as claude
+from bot.sections_en import SECTIONS_EN
 
 if not DATA.exists():   # first run: download and parse the book
     import subprocess, sys
@@ -17,7 +18,8 @@ def home():
 
 @app.get("/api/status")
 def status():
-    return jsonify(claude=claude.available(), key_problem=claude.KEY_PROBLEM, sections=index.sections(), count=len(index.docs))
+    return jsonify(claude=claude.available(), key_problem=claude.KEY_PROBLEM,
+                   sections=[{"he": s, "en": SECTIONS_EN.get(s, s)} for s in index.sections()], count=len(index.docs))
 
 @app.get("/api/search")
 def search():
@@ -31,10 +33,11 @@ def ask():
         return jsonify(error="No ANTHROPIC_API_KEY set - showing search results only."), 400
     body = request.get_json(force=True)
     q = body.get("question", "").strip()
+    history = body.get("history") or []
     try:
-        terms = claude.search_terms(q)
+        terms = claude.search_terms(q, history)
         passages = index.search(f"{q} {terms}", k=12, section=body.get("section") or None)
-        result = claude.answer(q, passages)
+        result = claude.answer(q, passages, history)
     except claude.anthropic.AuthenticationError:
         return jsonify(error="The API key was rejected. Check that you copied the whole key (it starts with sk-ant-)."), 400
     except claude.anthropic.PermissionDeniedError as e:
@@ -48,7 +51,10 @@ def ask():
         return jsonify(error=msg), 400
     except claude.anthropic.APIConnectionError:
         return jsonify(error="Could not reach Anthropic. Check your internet connection (a school/work network may block it)."), 502
-    return jsonify(**result, terms=terms, passages=passages)
+    except Exception as e:   # anything unexpected: show it instead of hanging
+        app.logger.exception("ask failed")
+        return jsonify(error=f"Something went wrong: {e}"), 500
+    return jsonify(**result)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

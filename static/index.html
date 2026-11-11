@@ -1,83 +1,286 @@
 <!doctype html>
-<html lang="he">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Yalkut Yosef Halakha Bot</title>
+<title>Yalkut Yosef Halakha</title>
 <style>
-  :root { --bg:#f7f5f0; --card:#fff; --ink:#1d2433; --muted:#6b7280; --accent:#2f5d9e; --line:#e5e1d8; --hl:#fdf3c4; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#14171d; --card:#1d222b; --ink:#e7e9ee; --muted:#9aa3b2; --accent:#7fa8e6; --line:#2c333f; --hl:#4a4214; } }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui, "Segoe UI", Arial, sans-serif; }
-  header { padding:20px 16px 8px; max-width:860px; margin:auto; }
-  h1 { margin:0; font-size:22px; } .sub { color:var(--muted); font-size:14px; }
-  main { max-width:860px; margin:auto; padding:8px 16px 40px; }
-  form { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
-  input, select, button { font:inherit; padding:10px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); }
-  input { flex:1 1 320px; } button { background:var(--accent); color:#fff; border:none; cursor:pointer; }
-  button.secondary { background:var(--card); color:var(--accent); border:1px solid var(--accent); }
-  button:disabled { opacity:.45; cursor:not-allowed; }
-  .notice { font-size:14px; color:var(--muted); background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:10px 0; }
-  .ref { color:var(--accent); font-weight:600; font-size:14px; } .he { direction:rtl; text-align:right; font-family:"David","Frank Ruehl CLM","Times New Roman",serif; font-size:18px; }
-  .answer { white-space:pre-wrap; } .src { color:var(--muted); font-size:15px; } mark { background:var(--hl); color:inherit; }
+  :root {
+    --bg: #f6f4ef; --surface: #ffffff; --ink: #1c2230; --muted: #6b7280; --line: #e6e1d6;
+    --accent: #2b5797; --accent-soft: #e8eef8; --user: #2b5797; --user-ink: #ffffff; --hl: #fbefb8;
+    --shadow: 0 1px 2px rgba(20, 24, 33, .06), 0 4px 16px rgba(20, 24, 33, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --surface: #1b2029; --ink: #e8eaef; --muted: #98a1b0; --line: #2a313d;
+      --accent: #86aee8; --accent-soft: #1f2a3b; --user: #2f5a9a; --user-ink: #ffffff; --hl: #4d4416;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+         display: flex; flex-direction: column; }
+  button { font: inherit; cursor: pointer; }
+
+  /* top bar */
+  header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .bar { max-width: 780px; margin: auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  .brand { flex: 1; min-width: 0; }
+  .brand b { display: block; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .brand span { display: block; color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tabs { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .tabs button { border: 0; background: none; color: var(--muted); padding: 5px 14px; border-radius: 999px; font-size: 14px; }
+  .tabs button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  @media (max-width: 520px) { .brand span { display: none; } .bar { gap: 8px; } .tabs button { padding: 5px 11px; } }
+  textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon-btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px;
+              padding: 5px 12px; font-size: 14px; }
+
+  /* chat */
+  main { flex: 1; width: 100%; max-width: 780px; margin: auto; padding: 16px 16px 8px; }
+  .view[hidden] { display: none; }
+  .welcome { text-align: center; padding: 48px 8px 16px; }
+  .welcome h2 { margin: 0 0 6px; font-size: 24px; }
+  .welcome p { margin: 0 auto 20px; color: var(--muted); max-width: 460px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px;
+          padding: 7px 14px; font-size: 14.5px; box-shadow: var(--shadow); }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  .msg { display: flex; margin: 14px 0; }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble { background: var(--user); color: var(--user-ink); border-radius: 18px 18px 4px 18px;
+                      padding: 9px 15px; max-width: 80%; white-space: pre-wrap; }
+  .msg.bot .card { background: var(--surface); border: 1px solid var(--line); border-radius: 4px 18px 18px 18px;
+                   padding: 14px 16px; max-width: 100%; width: 100%; box-shadow: var(--shadow); }
+  .answer { font-size: 16.5px; margin: 0; }
+  .card.notfound .answer { color: var(--muted); }
+  .quote { margin: 12px 0 0; padding: 2px 0 2px 14px; border-left: 3px solid var(--accent); }
+  .quote p { margin: 0; font-style: italic; }
+  .ref { margin-top: 4px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+  .ref b { color: var(--accent); font-weight: 600; }
+  .ref button { border: 0; background: none; color: var(--accent); padding: 0; font-size: 13px; text-decoration: underline; }
+  .he { direction: rtl; text-align: right; font-family: "David", "Frank Ruehl CLM", "Times New Roman", serif;
+        font-size: 18px; line-height: 1.7; font-style: normal; }
+  .hebrew-full { margin-top: 8px; padding: 10px 12px; background: var(--bg); border-radius: 8px; }
+  mark { background: var(--hl); color: inherit; border-radius: 2px; }
+  .error { color: #b4232c; }
+  @media (prefers-color-scheme: dark) { .error { color: #ff8a8a; } }
+
+  .typing { display: inline-flex; gap: 5px; padding: 6px 2px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .4; animation: blink 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 50% { opacity: 1; } }
+
+  /* composer */
+  .composer-wrap { position: sticky; bottom: 0; background: linear-gradient(to bottom, transparent, var(--bg) 30%); padding-top: 14px; }
+  .composer { max-width: 780px; margin: auto; padding: 0 16px 10px; }
+  .box { display: flex; align-items: flex-end; gap: 8px; background: var(--surface); border: 1px solid var(--line);
+         border-radius: 22px; padding: 6px 6px 6px 16px; box-shadow: var(--shadow); }
+  .box:focus-within { border-color: var(--accent); }
+  textarea { flex: 1; border: 0; outline: 0; resize: none; background: none; color: var(--ink); font: inherit;
+             padding: 7px 0; max-height: 160px; }
+  .send { width: 38px; height: 38px; border: 0; border-radius: 50%; background: var(--accent); color: #fff;
+          display: grid; place-items: center; flex: none; }
+  @media (prefers-color-scheme: dark) { .send { color: #10151d; } }
+  .send:disabled { opacity: .35; cursor: not-allowed; }
+  .fine { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; margin-top: 6px; padding: 0 6px; }
+  .fine select { border: 0; background: none; color: var(--muted); font: inherit; max-width: 45%; }
+  .notice { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+            color: var(--muted); font-size: 14px; white-space: pre-wrap; }
+
+  /* browse */
+  .search { display: flex; gap: 8px; margin-bottom: 12px; }
+  .search input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px;
+                  background: var(--surface); color: var(--ink); font: inherit; }
+  .search button { border: 0; border-radius: 12px; padding: 0 18px; background: var(--accent); color: #fff; }
+  @media (prefers-color-scheme: dark) { .search button { color: #10151d; } }
+  .result { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
+  .result .ref { justify-content: flex-end; }
 </style>
 </head>
 <body>
 <header>
-  <h1>Halakha according to Yalkut Yosef</h1>
-  <div class="sub">Kitzur Shulchan Aruch Yalkut Yosef, Rav Yitzhak Yosef, following the rulings of Hacham Ovadia Yosef zt"l</div>
+  <div class="bar">
+    <div class="brand">
+      <b>Yalkut Yosef Halakha</b>
+      <span>Rulings of Hacham Ovadia Yosef zt"l, from Kitzur Shulchan Aruch Yalkut Yosef</span>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="on" data-view="chat">Ask</button>
+      <button data-view="browse">Browse</button>
+    </div>
+    <button class="icon-btn" id="newChat" title="Start a new conversation">New</button>
+  </div>
 </header>
+
 <main>
-  <form id="f">
-    <input id="q" dir="auto" placeholder="חפש: חימום תבשיל בשבת   /   Ask: can I reheat soup on Shabbat?" autofocus>
-    <select id="sec"><option value="">All sections</option></select>
-    <button type="submit" id="searchBtn" class="secondary">Search the text</button>
-    <button type="button" id="askBtn" disabled>Ask</button>
-  </form>
-  <div id="status" class="notice">Loading…</div>
-  <div id="out"></div>
+  <section class="view" id="chat">
+    <div class="welcome" id="welcome">
+      <h2>Ask a halakha question</h2>
+      <p>Short answers based only on Yalkut Yosef, with the relevant se'ifim quoted in English.</p>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div id="thread"></div>
+  </section>
+
+  <section class="view" id="browse" hidden>
+    <form class="search" id="searchForm">
+      <input id="searchQ" dir="auto" placeholder="Search the Hebrew text, e.g. ברכה אחרונה">
+      <button>Search</button>
+    </form>
+    <div id="results"><div class="notice">Search the original Hebrew text of all 11,726 se'ifim. Use Hebrew words.</div></div>
+  </section>
 </main>
+
+<div class="composer-wrap" id="composerWrap">
+  <div class="composer">
+    <div id="keyNotice"></div>
+    <form class="box" id="askForm">
+      <textarea id="q" rows="1" dir="auto" placeholder="Ask about Shabbat, brachot, kashrut, holidays…"></textarea>
+      <button class="send" id="sendBtn" aria-label="Send" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+    </form>
+    <div class="fine">
+      <span>Not a psak. For your own case, ask a rav.</span>
+      <select id="sec" title="Limit to one topic"><option value="">All topics</option></select>
+    </div>
+  </div>
+</div>
+
 <script>
 const $ = s => document.querySelector(s);
-const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function highlight(text, q) {
-  let h = esc(text);
-  const words = q.split(/\s+/).filter(w => /[א-ת]{3,}/.test(w)).map(w => w.replace(/^[והבכלמש]{1,2}(?=[א-ת]{3})/, ''));
-  for (const w of words) h = h.split(w).join(`<mark>${w}</mark>`);
-  return h;
-}
-function card(p, q) {
-  return `<div class="card he"><div class="ref">${esc(p.section)} · ${esc(p.siman)} · סעיף ${esc(p.seif)}</div>
-          <div>${highlight(p.text, q || '')}</div></div>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SUGGESTIONS = [
+  "Can I reheat soup on Shabbat?",
+  "What bracha do I make on coffee?",
+  "When do I light Chanukah candles?",
+  "How long do I wait between meat and milk?",
+];
+let history = [];          // [{role, content}] sent back for follow-up questions
+let busy = false, keyOk = false;
+
+// ---------- setup ----------
+for (const s of SUGGESTIONS) {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.textContent = s;
+  b.onclick = () => { $('#q').value = s; send(); };
+  $('#chips').appendChild(b);
 }
 fetch('/api/status').then(r => r.json()).then(s => {
-  for (const name of s.sections) $('#sec').insertAdjacentHTML('beforeend', `<option>${esc(name)}</option>`);
-  $('#askBtn').disabled = !s.claude;
-  $('#status').textContent = s.claude
-    ? `${s.count.toLocaleString()} se'ifim loaded. Ask a question in any language, or search the Hebrew text.`
-    : `${s.count.toLocaleString()} se'ifim loaded. Search mode only: type Hebrew words to search the text. Add an Anthropic API key to turn on "Ask".` + (s.key_problem ? `\n\nWhy Ask is off: ${s.key_problem}` : '');
-  $('#status').style.whiteSpace = 'pre-wrap';
+  for (const sec of s.sections) $('#sec').insertAdjacentHTML('beforeend', `<option value="${esc(sec.he)}">${esc(sec.en)}</option>`);
+  keyOk = s.claude;
+  if (!keyOk) {
+    $('#keyNotice').innerHTML = `<div class="notice" style="margin-bottom:8px">Asking is off because no API key was found.` +
+      (s.key_problem ? `\n${esc(s.key_problem)}` : '') + `\nYou can still use the Browse tab to search the text.</div>`;
+  }
+  updateSend();
 });
-$('#f').onsubmit = async e => {
+
+// ---------- tabs ----------
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  const v = b.dataset.view;
+  $('#chat').hidden = v !== 'chat'; $('#browse').hidden = v !== 'browse';
+  $('#composerWrap').hidden = v !== 'chat'; $('#newChat').hidden = v !== 'chat';
+  (v === 'chat' ? $('#q') : $('#searchQ')).focus();
+});
+
+// ---------- composer ----------
+const q = $('#q');
+function updateSend() { $('#sendBtn').disabled = busy || !keyOk || !q.value.trim(); q.disabled = !keyOk; }
+q.addEventListener('input', () => { q.style.height = 'auto'; q.style.height = q.scrollHeight + 'px'; updateSend(); });
+q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+$('#askForm').onsubmit = e => { e.preventDefault(); send(); };
+$('#newChat').onclick = () => { history = []; $('#thread').innerHTML = ''; $('#welcome').hidden = false; q.focus(); };
+
+function scrollDown() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
+
+function refLine(r) {
+  const parts = [`<b>${esc(r.section_en)}</b>`];
+  if (r.siman) parts.push(`Siman ${r.siman}`);
+  parts.push(`Se'if ${r.seif}`);
+  return parts.join(' · ');
+}
+
+function highlightIn(full, part) {
+  // highlight the quoted sentence inside the full se'if (best effort)
+  const i = full.indexOf(part);
+  if (i < 0) return esc(full);
+  return esc(full.slice(0, i)) + '<mark>' + esc(part) + '</mark>' + esc(full.slice(i + part.length));
+}
+
+function botCard(r) {
+  const card = document.createElement('div');
+  card.className = 'card' + (r.found ? '' : ' notfound');
+  card.innerHTML = `<p class="answer">${esc(r.answer)}</p>`;
+  for (const quote of r.quotes || []) {
+    const el = document.createElement('div');
+    el.className = 'quote';
+    el.innerHTML = `<p>“${esc(quote.english)}”</p>
+      <div class="ref"><span>${refLine(quote.ref)}</span><button type="button">Show Hebrew</button></div>`;
+    const btn = el.querySelector('button');
+    btn.onclick = () => {
+      let box = el.querySelector('.hebrew-full');
+      if (box) { box.remove(); btn.textContent = 'Show Hebrew'; return; }
+      box = document.createElement('div');
+      box.className = 'hebrew-full he';
+      box.innerHTML = highlightIn(quote.full_hebrew, quote.hebrew);
+      el.appendChild(box); btn.textContent = 'Hide Hebrew';
+    };
+    card.appendChild(el);
+  }
+  return card;
+}
+
+function addMsg(role, content) {
+  const row = document.createElement('div');
+  row.className = 'msg ' + role;
+  if (typeof content === 'string') row.innerHTML = `<div class="bubble" dir="auto">${esc(content)}</div>`;
+  else row.appendChild(content);
+  $('#thread').appendChild(row);
+  scrollDown();
+  return row;
+}
+
+async function send() {
+  const text = q.value.trim();
+  if (!text || busy || !keyOk) return;
+  busy = true; $('#welcome').hidden = true;
+  q.value = ''; q.style.height = 'auto'; updateSend();
+  addMsg('user', text);
+  const wait = document.createElement('div');
+  wait.className = 'card'; wait.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+  const row = addMsg('bot', wait);
+  let r;
+  try {
+    r = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: text, history, section: $('#sec').value }) }).then(x => x.json());
+  } catch { r = { error: 'Something went wrong. Look at the black window for the error message.' }; }
+  if (r.error) {
+    wait.innerHTML = `<p class="answer error">${esc(r.error)}</p>`;
+  } else {
+    row.replaceChildren(botCard(r));
+    history.push({ role: 'user', content: text }, { role: 'assistant', content: r.answer });
+    history = history.slice(-8);
+  }
+  busy = false; updateSend(); scrollDown(); q.focus();
+}
+
+// ---------- browse ----------
+$('#searchForm').onsubmit = async e => {
   e.preventDefault();
-  const q = $('#q').value.trim(); if (!q) return;
-  const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&section=${encodeURIComponent($('#sec').value)}`).then(r => r.json());
-  $('#out').innerHTML = r.results.length ? r.results.map(p => card(p, q)).join('')
-    : `<div class="notice">No results. The text is in Hebrew, so search with Hebrew words (e.g. ברכה אחרונה).</div>`;
-};
-$('#askBtn').onclick = async () => {
-  const q = $('#q').value.trim(); if (!q) return;
-  $('#out').innerHTML = '<div class="notice">Looking it up…</div>';
-  const r = await fetch('/api/ask', {method:'POST', headers:{'Content-Type':'application/json'},
-                        body: JSON.stringify({question:q, section:$('#sec').value})}).then(r => r.json())
-                        .catch(() => ({error: 'Something went wrong. Look at the black window for the error message.'}));
-  if (r.error) { $('#out').innerHTML = `<div class="notice">${esc(r.error)}</div>`; return; }
-  const cites = r.citations.map((c, i) => `<div class="src he">[${i+1}] <b>${esc(c.title)}</b>: ${esc(c.quote)}</div>`).join('');
-  $('#out').innerHTML = `<div class="card"><div class="answer" dir="auto">${esc(r.text)}</div>
-     <hr style="border:none;border-top:1px solid var(--line)">${cites}
-     <p class="src">This is a learning tool, not a psak. For your own case, ask a rav.</p></div>
-     <h3>Passages consulted</h3>` + r.passages.map(p => card(p, r.terms)).join('');
+  const s = $('#searchQ').value.trim(); if (!s) return;
+  const r = await fetch(`/api/search?q=${encodeURIComponent(s)}&section=${encodeURIComponent($('#sec').value)}`).then(x => x.json());
+  const words = s.split(/\s+/).filter(w => /[א-ת]{3,}/.test(w)).map(w => w.replace(/^[והבכלמש]{1,2}(?=[א-ת]{3})/, ''));
+  const mark = t => { let h = esc(t); for (const w of words) h = h.split(w).join(`<mark>${w}</mark>`); return h; };
+  $('#results').innerHTML = r.results.length
+    ? r.results.map(p => `<div class="result"><div class="ref he" style="font-size:14px">${esc(p.section)} · ${esc(p.siman)} · סעיף ${esc(p.seif)}</div>
+                          <div class="he">${mark(p.text)}</div></div>`).join('')
+    : '<div class="notice">No results. The text is in Hebrew, so search with Hebrew words (e.g. ברכה אחרונה).</div>';
 };
 </script>
 </body>

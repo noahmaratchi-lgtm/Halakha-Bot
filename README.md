@@ -21,8 +21,10 @@ On first run the app downloads and parses the book from toratemetfreeware.com in
 `data/` (the text itself is not stored in this repo, since it is under copyright).
 
 Without a key: Hebrew keyword search over all 11,726 se'ifim.
-With a key: questions in any language get an answer from Claude, built only from the
-se'ifim the search found, with numbered citations.
+With a key: a chat where questions in any language get a short English answer (1-3 sentences)
+built only from the se'ifim the search found, plus 1-3 quotes translated into English with
+siman and se'if. Every Hebrew quote is checked against the book's text before it is shown;
+quotes that don't match are dropped. "Show Hebrew" displays the original se'if.
 
 Or, with no terminal: create a file named `api_key.txt` in the project folder containing
 only your key. (It's in .gitignore - never share or commit it.)
