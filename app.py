@@ -1,6 +1,7 @@
 """Local web app: search Yalkut Yosef, and (with an API key) ask Claude.
 Run:  .venv/bin/python app.py   then open http://localhost:5000"""
-from flask import Flask, jsonify, request, send_from_directory
+import pathlib, re
+from flask import Flask, abort, jsonify, request, send_file, send_from_directory
 from bot.search import Index, DATA
 from bot import answer as claude
 from bot.sections_en import SECTIONS_EN
@@ -22,9 +23,25 @@ def no_cache(resp):
 def home():
     return send_from_directory("static", "index.html")
 
+ROOT = pathlib.Path(__file__).resolve().parent
+
+def photo_file():
+    """A picture the user saved in the project folder as rabbi.jpg / rabbi.png / etc."""
+    for f in sorted(ROOT.iterdir()):
+        if f.is_file() and re.match(r"(rabbi|ovadia|photo)[^/]*\.(jpe?g|jfif|png|webp|gif|avif)$", f.name, re.I):
+            return f
+    return None
+
+@app.get("/photo")
+def photo():
+    f = photo_file()
+    if not f:
+        abort(404)
+    return send_file(f, mimetype="image/jpeg" if f.suffix.lower() == ".jfif" else None)
+
 @app.get("/api/status")
 def status():
-    return jsonify(claude=claude.available(), key_problem=claude.KEY_PROBLEM,
+    return jsonify(claude=claude.available(), key_problem=claude.KEY_PROBLEM, has_photo=photo_file() is not None,
                    sections=[{"he": s, "en": SECTIONS_EN.get(s, s)} for s in index.sections()], count=len(index.docs))
 
 @app.get("/api/search")

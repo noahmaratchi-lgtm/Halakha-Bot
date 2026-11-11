@@ -34,6 +34,12 @@ export ANTHROPIC_API_KEY=sk-ant-...
 .venv/bin/python app.py
 ```
 
+## Adding a photo
+
+Save a picture in the project folder named `rabbi` (jpg, png, webp, jfif or avif). It appears
+in the header and in the arch on the start screen. Photos are not stored in the repo, since
+they belong to their photographers.
+
 ## Files
 
 - `data/yalkut_yosef_kitzur.jsonl` - the book, one record per se'if (created on first run)
